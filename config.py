@@ -24,6 +24,8 @@ class Settings:
 
     database_path: str
 
+    microcenter_product_urls: tuple[str, ...]
+
 
 def load_settings() -> Settings:
     webhook_url = os.getenv("DISCORD_WEBHOOK_URL", "").strip()
@@ -54,5 +56,13 @@ def load_settings() -> Settings:
         database_path=os.getenv(
             "DATABASE_PATH",
             "data/ram_prices.db",
+        ),
+        microcenter_product_urls=tuple(
+            url.strip()
+            for url in os.getenv(
+                "MICROCENTER_PRODUCT_URLS",
+                "",
+            ).split(",")
+            if url.strip()
         ),
     )

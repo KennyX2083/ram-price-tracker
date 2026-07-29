@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 from alert_rules import AlertEvaluator
-from config import load_settings
+from config import Settings, load_settings
 from database import Database
 from deal_processor import DealProcessor
 from discord_alerts import DiscordNotifier
 from retailers.base import RetailerClient
+from retailers.microcenter import MicroCenterClient
 
 
-def build_processor() -> DealProcessor:
-    settings = load_settings()
+def build_processor(
+    settings: Settings,
+) -> DealProcessor:
 
     database = Database(settings.database_path)
     database.initialize()
@@ -59,23 +61,50 @@ def run_retailer(
 
 
 def main() -> None:
-    processor = build_processor()
+    settings = load_settings()
+    processor = build_processor(settings)
 
     retailers: list[RetailerClient] = [
         # Retailer clients will be added here.
     ]
 
+    if settings.best_buy_api_key:
+        from retailers.best_buy import BestBuyClient
+
+        retailers.append(
+            BestBuyClient(
+                settings.best_buy_api_key
+            )
+        )
+    else:
+        print(
+            "Best Buy skipped: "
+            "API key is not configured."
+        )
+
+    if settings.microcenter_product_urls:
+        retailers.append(
+            MicroCenterClient(
+                settings.microcenter_product_urls
+            )
+        )
+    else:
+        print(
+            "Microcenter skipped: " \
+            "no product URLs are configured."
+        )
+
     if not retailers:
         print(
-            "RAM Deal Tracker initialized successfully."
-        )
-        print(
-            "No retailer clients are configured yet."
+            "No retailer clients are configured."
         )
         return
 
     for retailer in retailers:
-        run_retailer(retailer, processor)
+        run_retailer(
+            retailer,
+            processor,
+        )
 
 
 if __name__ == "__main__":
