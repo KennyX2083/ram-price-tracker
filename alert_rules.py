@@ -38,6 +38,16 @@ class AlertEvaluator:
             listing.listing_id
         )
 
+        observation_count_total = (
+            self.database.get_observation_count(
+                listing.listing_id
+            )
+        )
+
+        is_first_observation = (
+            observation_count_total == 0
+        )
+
         average_30d, observation_count, distinct_days = (
             self.database.get_30_day_statistics(
                 listing.listing_id
@@ -87,12 +97,14 @@ class AlertEvaluator:
                 ) / average_30d
 
         crossed_price_threshold = (
-            currently_below_price
+            not is_first_observation
+            and currently_below_price
             and not previously_below_price
         )
 
         crossed_average_threshold = (
-            currently_below_average
+            not is_first_observation
+            and currently_below_average
             and not previously_below_average
         )
 

@@ -95,10 +95,12 @@ class Database:
         with self.connect() as connection:
             connection.executescript(SCHEMA)
 
-    def save_observation(self, listing: Listing) -> None:
+    def register_listing(
+        self,
+        listing: Listing,
+    ) -> None:
         checked_at = listing.checked_at.isoformat()
-        price_cents = decimal_to_cents(listing.price)
-
+    
         with self.connect() as connection:
             connection.execute(
                 """
@@ -141,6 +143,21 @@ class Database:
 
             connection.execute(
                 """
+                INSERT OR IGNORE INTO alert_state (
+                    listing_id
+                )
+                VALUES (?)
+                """,
+                (listing.listing_id,),
+            )
+    
+    def save_price_observation(
+        self,
+        listing: Listing,
+    ) -> None:
+        with self.connect() as connection:
+            connection.execute(
+                """
                 INSERT INTO price_history (
                     listing_id,
                     price_cents,
@@ -151,21 +168,34 @@ class Database:
                 """,
                 (
                     listing.listing_id,
-                    price_cents,
+                    decimal_to_cents(listing.price),
                     int(listing.in_stock),
-                    checked_at,
+                    listing.checked_at.isoformat(),
                 ),
             )
 
-            connection.execute(
+    def save_observation(
+        self,
+        listing: Listing,
+    ) -> None:
+        self.register_listing(listing)
+        self.save_price_observation(listing)
+        
+    def get_observation_count(
+        self,
+        listing_id: str,
+    ) -> int:
+        with self.connect() as connection:
+            row = connection.execute(
                 """
-                INSERT OR IGNORE INTO alert_state (
-                    listing_id
-                )
-                VALUES (?)
+                SELECT COUNT(*) AS observation_count
+                FROM price_history
+                WHERE listing_id = ?
                 """,
-                (listing.listing_id,),
-            )
+                (listing_id,),
+            ).fetchone()
+
+        return int(row["observation_count"])
 
     def get_previous_price(
         self,
@@ -323,7 +353,6 @@ class Database:
                     listing_id,
                 ),
             )
-
 
 def decimal_to_cents(value: Decimal) -> int:
     return int(

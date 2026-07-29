@@ -30,7 +30,7 @@ class DealProcessor:
 
         # Save the current observation before calculating
         # rolling statistics.
-        self.database.save_observation(listing)
+        self.database.register_listing(listing)
 
         decision = self.evaluator.evaluate(listing)
 
@@ -66,6 +66,9 @@ class DealProcessor:
             print("Discord deal alert sent.")
         else:
             print("No alert triggered.")
+
+        # Save price after evalutating against previous history
+        self.database.save_price_observation(listing)
 
         # Always update crossing state after evaluation.
         self.evaluator.update_state(
