@@ -26,6 +26,17 @@ class MicroCenterClient(ManualURLClient):
             context,
         )
 
+        return self.parse_listing(
+            soup=soup,
+            url=url,
+        )
+
+
+    def parse_listing(
+        self,
+        soup: BeautifulSoup,
+        url: str,
+    ) -> Listing:
         product_data = self._find_product_json_ld(
             soup
         )
