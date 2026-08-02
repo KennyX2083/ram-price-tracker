@@ -7,6 +7,7 @@ from deal_processor import DealProcessor
 from discord_alerts import DiscordNotifier
 from retailers.base import RetailerClient
 from retailers.microcenter import MicroCenterClient
+from retailers.newegg import NeweggClient
 
 
 def build_processor(
@@ -93,6 +94,12 @@ def main() -> None:
             "Microcenter skipped: " \
             "no product URLs are configured."
         )
+
+    retailers.append(
+        NeweggClient(
+            headless=False,
+        )
+    )
 
     if not retailers:
         print(

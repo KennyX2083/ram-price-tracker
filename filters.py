@@ -25,19 +25,27 @@ APPROVED_SELLERS = {
 def enrich_from_name(listing: Listing) -> Listing:
     return enrich_listing(listing)
 
-
-def matches_requirements(listing: Listing) -> bool:
+def matches_product_specs(listing: Listing) -> bool:
+    """
+    Check the RAM specifications without checking
+    the retailer or seller.
+    """
     enriched = enrich_listing(listing)
 
     return all((
         enriched.in_stock,
         enriched.condition.lower() == "new",
-        enriched.retailer in APPROVED_RETAILERS,
-        enriched.seller in APPROVED_SELLERS,
         enriched.memory_type == "DDR5",
         enriched.form_factor == "SODIMM",
         enriched.total_capacity_gb == 32,
         enriched.module_count == 2,
         enriched.module_capacity_gb == 16,
         enriched.speed_mts == 5600,
+    ))
+
+def matches_requirements(listing: Listing) -> bool:
+    return all((
+        matches_product_specs(listing),
+        listing.retailer in APPROVED_RETAILERS,
+        listing.seller in APPROVED_SELLERS,
     ))
