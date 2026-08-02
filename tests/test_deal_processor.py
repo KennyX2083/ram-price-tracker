@@ -1,6 +1,5 @@
 from datetime import datetime, timezone
 from decimal import Decimal
-
 from alert_rules import AlertEvaluator
 from config import Settings
 from database import Database

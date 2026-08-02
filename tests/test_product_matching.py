@@ -1,8 +1,6 @@
 from datetime import datetime, timezone
 from decimal import Decimal
-
 import pytest
-
 from models import Listing
 from product_matching import (
     enrich_listing,

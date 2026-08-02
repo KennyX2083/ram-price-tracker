@@ -1,6 +1,5 @@
 from datetime import datetime
 from decimal import Decimal
-
 from filters import enrich_from_name, matches_requirements
 from models import Listing
 

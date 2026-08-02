@@ -1,14 +1,11 @@
 from __future__ import annotations
-
 from abc import ABC, abstractmethod
-
 from bs4 import BeautifulSoup
 from playwright.sync_api import (
     BrowserContext,
     Playwright,
     sync_playwright,
 )
-
 from models import Listing
 from retailers.base import RetailerClient
 

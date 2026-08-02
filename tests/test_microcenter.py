@@ -1,8 +1,6 @@
 from decimal import Decimal
 from pathlib import Path
-
 from bs4 import BeautifulSoup
-
 from retailers.microcenter import MicroCenterClient
 
 

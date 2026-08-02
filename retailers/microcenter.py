@@ -1,17 +1,13 @@
 from __future__ import annotations
-
 import json
 import re
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from typing import Any
 from urllib.parse import urlparse
-
 from bs4 import BeautifulSoup
-
 from models import Listing
 from retailers.manual import ManualURLClient
-
 from playwright.sync_api import BrowserContext
 
 

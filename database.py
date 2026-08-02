@@ -1,13 +1,11 @@
 from __future__ import annotations
-
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 from typing import Iterator
-
-from models import Listing
+from models import Listing, LatestPrice
 
 
 SCHEMA = """
@@ -217,6 +215,109 @@ class Database:
             return None
 
         return cents_to_decimal(row["price_cents"])
+
+    def get_latest_prices(
+        self,
+    ) -> list[LatestPrice]:
+        """
+        Return the newest price observation for every
+        tracked listing.
+        """
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                    l.listing_id,
+                    l.retailer,
+                    l.seller,
+                    l.name,
+                    l.url,
+                    ph.price_cents,
+                    ph.in_stock,
+                    ph.checked_at
+                FROM listings AS l
+                JOIN price_history AS ph
+                    ON ph.id = (
+                        SELECT newest.id
+                        FROM price_history AS newest
+                        WHERE newest.listing_id = l.listing_id
+                        ORDER BY
+                            newest.checked_at DESC,
+                            newest.id DESC
+                        LIMIT 1
+                    )
+                ORDER BY
+                    l.retailer ASC,
+                    l.name ASC
+                """
+            ).fetchall()
+
+        return [
+            LatestPrice(
+                listing_id=row["listing_id"],
+                retailer=row["retailer"],
+                seller=row["seller"],
+                name=row["name"],
+                price=cents_to_decimal(
+                    row["price_cents"]
+                ),
+                url=row["url"],
+                in_stock=bool(row["in_stock"]),
+                checked_at=datetime.fromisoformat(
+                    row["checked_at"]
+                ),
+            )
+            for row in rows
+        ]
+
+    def get_latest_price(
+        self,
+        listing_id: str,
+    ) -> LatestPrice | None:
+        """
+        Return the newest observation for one listing.
+        """
+        with self.connect() as connection:
+            row = connection.execute(
+                """
+                SELECT
+                    l.listing_id,
+                    l.retailer,
+                    l.seller,
+                    l.name,
+                    l.url,
+                    ph.price_cents,
+                    ph.in_stock,
+                    ph.checked_at
+                FROM listings AS l
+                JOIN price_history AS ph
+                    ON ph.listing_id = l.listing_id
+                WHERE l.listing_id = ?
+                ORDER BY
+                    ph.checked_at DESC,
+                    ph.id DESC
+                LIMIT 1
+                """,
+                (listing_id,),
+            ).fetchone()
+
+        if row is None:
+            return None
+
+        return LatestPrice(
+            listing_id=row["listing_id"],
+            retailer=row["retailer"],
+            seller=row["seller"],
+            name=row["name"],
+            price=cents_to_decimal(
+                row["price_cents"]
+            ),
+            url=row["url"],
+            in_stock=bool(row["in_stock"]),
+            checked_at=datetime.fromisoformat(
+                row["checked_at"]
+            ),
+        )
 
     def get_30_day_statistics(
         self,

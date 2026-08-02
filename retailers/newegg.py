@@ -1,18 +1,15 @@
 from __future__ import annotations
-
 import re
 from dataclasses import replace
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from urllib.parse import quote_plus, urljoin
-
 from bs4 import BeautifulSoup
 from playwright.sync_api import (
     BrowserContext,
     Playwright,
     sync_playwright,
 )
-
 from filters import matches_product_specs
 from models import Listing
 from retailers.base import RetailerClient

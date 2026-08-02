@@ -2,7 +2,6 @@ from __future__ import annotations
 from models import Listing
 from product_matching import enrich_listing
 
-
 APPROVED_RETAILERS = {
     "Amazon",
     "Best Buy",

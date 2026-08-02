@@ -1,10 +1,7 @@
 from __future__ import annotations
-
 import re
 from dataclasses import replace
-
 from models import Listing
-
 
 def normalize_product_text(value: str) -> str:
     text = value.lower()

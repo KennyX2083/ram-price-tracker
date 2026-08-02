@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from alert_rules import AlertEvaluator
 from database import Database
 from discord_alerts import DiscordNotifier

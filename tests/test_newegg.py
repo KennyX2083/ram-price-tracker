@@ -1,8 +1,6 @@
 from decimal import Decimal
 from pathlib import Path
-
 from bs4 import BeautifulSoup
-
 from filters import matches_requirements
 from retailers.newegg import NeweggClient
 

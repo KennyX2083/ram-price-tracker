@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from alert_rules import AlertEvaluator
 from config import Settings, load_settings
 from database import Database
@@ -8,7 +7,6 @@ from discord_alerts import DiscordNotifier
 from retailers.base import RetailerClient
 from retailers.microcenter import MicroCenterClient
 from retailers.newegg import NeweggClient
-
 
 def build_processor(
     settings: Settings,

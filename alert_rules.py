@@ -1,9 +1,7 @@
 from __future__ import annotations
-
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-
 from config import Settings
 from database import Database
 from models import Listing
