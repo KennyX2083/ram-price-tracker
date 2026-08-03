@@ -13,9 +13,8 @@ APPROVED_RETAILERS = {
 APPROVED_SELLERS = {
     "Amazon",
     "Amazon.com",
-    "Best Buy",
-    "B&H",
     "B&H Photo Video",
+    "Best Buy",
     "Micro Center",
     "Newegg",
 }

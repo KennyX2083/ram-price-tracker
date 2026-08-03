@@ -10,3 +10,7 @@ __pycache__/
 data/*.db
 
 .vscode/settings.json
+
+# Temporary debug output
+tests/fixtures/*_debug.html
+tests/fixtures/*_debug.png
