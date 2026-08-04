@@ -24,6 +24,11 @@ class Settings:
 
     microcenter_product_urls: tuple[str, ...]
 
+    amazon_credential_id: str
+    amazon_credential_secret: str
+    amazon_partner_tag: str
+    amazon_marketplace: str
+
 
 def load_settings() -> Settings:
     webhook_url = os.getenv("DISCORD_WEBHOOK_URL", "").strip()
@@ -34,6 +39,26 @@ def load_settings() -> Settings:
         )
 
     best_buy_api_key = os.getenv("BEST_BUY_API_KEY", "").strip()
+
+    amazon_credential_id = os.getenv(
+        "AMAZON_CREDENTIAL_ID",
+        "",
+    ).strip()
+
+    amazon_credential_secret = os.getenv(
+        "AMAZON_CREDENTIAL_SECRET",
+        "",
+    ).strip()
+
+    amazon_partner_tag = os.getenv(
+        "AMAZON_PARTNER_TAG",
+        "",
+    ).strip()
+
+    amazon_marketplace = os.getenv(
+        "AMAZON_MARKETPLACE",
+        "www.amazon.com",
+    ).strip()
 
     return Settings(
         discord_webhook_url=webhook_url,
@@ -63,4 +88,10 @@ def load_settings() -> Settings:
             ).split(",")
             if url.strip()
         ),
+        amazon_credential_id=amazon_credential_id,
+        amazon_credential_secret=(
+            amazon_credential_secret
+        ),
+        amazon_partner_tag=amazon_partner_tag,
+        amazon_marketplace=amazon_marketplace,
     )

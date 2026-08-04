@@ -41,6 +41,10 @@ def make_settings(
         minimum_history_observations=3,
         minimum_history_days=1,
         alert_cooldown_hours=24,
+        amazon_credential_id="",
+        amazon_credential_secret="",
+        amazon_partner_tag="",
+        amazon_marketplace="www.amazon.com",
     )
 
 

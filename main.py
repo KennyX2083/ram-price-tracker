@@ -7,6 +7,8 @@ from discord_alerts import DiscordNotifier
 from retailers.base import RetailerClient
 from retailers.microcenter import MicroCenterClient
 from retailers.newegg import NeweggClient
+from retailers.bhphoto import BHPhotoClient
+from retailers.amazon import AmazonClient
 
 def build_processor(
     settings: Settings,
@@ -98,6 +100,27 @@ def main() -> None:
             headless=False,
         )
     )
+
+    retailers.append(
+        BHPhotoClient(
+            headless=False,
+        )
+    )
+
+    amazon = AmazonClient(
+        credential_id=settings.amazon_credential_id,
+        credential_secret=settings.amazon_credential_secret,
+        partner_tag=settings.amazon_partner_tag,
+        marketplace=settings.amazon_marketplace,
+    )
+
+    if amazon.is_configured:
+        retailers.append(amazon)
+    else:
+        print(
+            "Amazon skipped: "
+            "credentials are not configured."
+        )
 
     if not retailers:
         print(
