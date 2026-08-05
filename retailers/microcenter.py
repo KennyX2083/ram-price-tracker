@@ -4,14 +4,351 @@ import re
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin, urlunparse
 from bs4 import BeautifulSoup
 from models import Listing
 from retailers.manual import ManualURLClient
-from playwright.sync_api import BrowserContext
-
+from playwright.sync_api import BrowserContext, sync_playwright
 
 class MicroCenterClient(ManualURLClient):
+    BASE_URL = "https://www.microcenter.com"
+
+    LAPTOP_MEMORY_URL = (
+        "https://www.microcenter.com/search/"
+        "search_results.aspx"
+        "?fq=category%3ALaptop+Memory%2FRAM%7C423"
+    )
+
+    def __init__(
+            self,
+            product_urls: tuple[str, ...] | list[str] | None = None,
+            timeout: int = 30_000,
+            headless: bool = False,
+    ) -> None:
+        super().__init__(
+            product_urls=product_urls or (),
+            timeout = timeout,
+            headless = headless,
+        )
+
+    def search(self) -> list[Listing]:
+        with sync_playwright() as playwright:
+            context = self._create_browser_context(
+                playwright
+            )
+
+            try:
+                soup = self._fetch_search_page(
+                    context
+                )
+            finally:
+                context.browser.close()
+
+        listings = self.parse_search_page(
+            soup
+        )
+
+        unique_listings: dict[str, Listing] = {}
+
+        for listing in listings:
+            unique_listings[
+                listing.listing_id
+            ] = listing
+
+        return list(unique_listings.values())
+
+    def _fetch_search_page(
+        self,
+        context: BrowserContext,
+    ) -> BeautifulSoup:
+        page = context.new_page()
+
+        try:
+            response = page.goto(
+                self.LAPTOP_MEMORY_URL,
+                wait_until="domcontentloaded",
+                timeout=self.timeout,
+            )
+
+            if response is None:
+                raise RuntimeError(
+                    "Micro Center search page "
+                    "returned no response."
+                )
+
+            if response.status >= 400:
+                raise RuntimeError(
+                    "Micro Center search page returned "
+                    f"HTTP {response.status}."
+                )
+
+            try:
+                page.wait_for_selector(
+                    "#productGrid li.product_wrapper",
+                    timeout=15_000,
+                )
+            except Exception:
+                # The parser will return an empty list if
+                # Micro Center displays no products.
+                pass
+
+            page.wait_for_timeout(3000)
+
+            html = page.content()
+
+            return BeautifulSoup(
+                html,
+                "html.parser",
+            )
+        finally:
+            page.close()
+
+    def parse_search_page(
+        self,
+        soup: BeautifulSoup,
+    ) -> list[Listing]:
+        listings: list[Listing] = []
+
+        product_cards = soup.select(
+            "#productGrid li.product_wrapper"
+        )
+
+        for card in product_cards:
+            listing = self._parse_search_card(
+                card
+            )
+
+            if listing is not None:
+                listings.append(listing)
+
+        return listings
+
+    def _parse_search_card(
+        self,
+        card,
+    ) -> Listing | None:
+        product_link = card.select_one(
+            ".pDescription .h2 a[data-id]"
+        )
+
+        if product_link is None:
+            return None
+
+        raw_url = product_link.get("href")
+        product_id = product_link.get("data-id")
+        raw_price = product_link.get("data-price")
+
+        name = (
+            product_link.get("data-name")
+            or product_link.get_text(
+                " ",
+                strip=True,
+            )
+        )
+
+        brand = product_link.get("data-brand")
+
+        if not raw_url:
+            return None
+
+        if not product_id:
+            return None
+
+        if not name:
+            return None
+
+        price = self._parse_price(
+            raw_price
+        )
+
+        if price is None:
+            return None
+
+        url = urljoin(
+            self.BASE_URL,
+            str(raw_url),
+        )
+
+        parsed_url = urlparse(url)
+
+        url = parsed_url._replace(
+            query="",
+            fragment="",
+        ).geturl()
+
+        card_text = card.get_text(
+            " ",
+            strip=True,
+        )
+
+        image_url = self._extract_search_image(
+            card
+        )
+
+        model_number = (
+            self._extract_model_from_name(
+                str(name)
+            )
+        )
+
+        in_stock = self._search_card_in_stock(
+            card_text
+        )
+
+        condition = (
+            "refurbished"
+            if self._contains_any(
+                str(name).lower(),
+                (
+                    "refurbished",
+                    "certified pre-owned",
+                    "pre-owned",
+                ),
+            )
+            else "new"
+        )
+
+        return Listing(
+            listing_id=(
+                f"microcenter:{product_id}"
+            ),
+            retailer="Micro Center",
+            seller="Micro Center",
+            name=str(name).strip(),
+            price=price,
+            url=url,
+            in_stock=in_stock,
+            checked_at=datetime.now(timezone.utc),
+            brand=(
+                str(brand).strip()
+                if brand
+                else None
+            ),
+            model_number=model_number,
+            image_url=image_url,
+            condition=condition,
+        )
+
+    @classmethod
+    def _extract_search_image(
+        cls,
+        card,
+    ) -> str | None:
+        image = card.select_one(
+            ".result_left img"
+        )
+
+        if image is None:
+            image = card.find("img")
+
+        if image is None:
+            return None
+
+        raw_url = (
+            image.get("src")
+            or image.get("data-src")
+            or image.get("data-original")
+            or image.get("data-lazy-src")
+        )
+
+        if not raw_url:
+            return None
+
+        return urljoin(
+            cls.BASE_URL,
+            str(raw_url),
+        )
+
+    @staticmethod
+    def _extract_model_from_name(
+        name: str,
+    ) -> str | None:
+        patterns = (
+            r"\bModel\s+([A-Za-z0-9._-]+)\b",
+            r"\bModel:\s*([A-Za-z0-9._-]+)\b",
+            r"\b(?:Module|Kit)\s+([A-Z0-9][A-Za-z0-9._-]+)$",
+        )
+
+        for pattern in patterns:
+            match = re.search(
+                pattern,
+                name,
+                flags=re.IGNORECASE,
+            )
+
+            if match:
+                return match.group(1).strip()
+
+        last_token_match = re.search(
+            r"\b([A-Z0-9][A-Za-z0-9._-]{5,})$",
+            name.strip(),
+        )
+
+        if last_token_match:
+            candidate = last_token_match.group(1)
+
+            if any(
+                character.isdigit()
+                for character in candidate
+            ):
+                return candidate
+
+        return None
+
+    @staticmethod
+    def _search_card_in_stock(
+        card_text: str,
+    ) -> bool:
+        normalized = re.sub(
+            r"\s+",
+            " ",
+            card_text.lower(),
+        ).strip()
+
+        unavailable_phrases = (
+            "out of stock",
+            "sold out",
+            "unavailable",
+            "discontinued",
+            "no longer carried",
+            "0 in stock",
+        )
+
+        if any(
+            phrase in normalized
+            for phrase in unavailable_phrases
+        ):
+            return False
+
+        available_phrases = (
+            "in stock",
+            "add to cart",
+            "available for shipping",
+            "ship this item",
+            "special order",
+        )
+
+        if any(
+            phrase in normalized
+            for phrase in available_phrases
+        ):
+            return True
+
+        # Search results only include products available
+        # for the selected store/shipping context, so use
+        # True when there is no explicit unavailable state.
+        return True
+
+    @staticmethod
+    def _contains_any(
+        text: str,
+        values: tuple[str, ...],
+    ) -> bool:
+        return any(
+            value in text
+            for value in values
+        )
+
     def fetch_listing(
         self,
         url: str,
@@ -58,6 +395,11 @@ class MicroCenterClient(ManualURLClient):
             )
 
         product_id = self._extract_product_id(url)
+        if product_id is None:
+            raise ValueError(
+                "Micro Center URL does not contain "
+                "a numeric product ID."
+            )
 
         availability = self._get_availability(
             soup=soup,
@@ -371,7 +713,7 @@ class MicroCenterClient(ManualURLClient):
     @staticmethod
     def _extract_product_id(
         url: str,
-    ) -> str:
+    ) -> str | None:
         path = urlparse(url).path
 
         match = re.search(
@@ -382,10 +724,7 @@ class MicroCenterClient(ManualURLClient):
         if match:
             return match.group(1)
 
-        raise ValueError(
-            "Micro Center URL does not contain "
-            "a numeric product ID."
-        )
+        return None
 
     @staticmethod
     def _parse_price(

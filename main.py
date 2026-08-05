@@ -83,17 +83,11 @@ def main() -> None:
             "API key is not configured."
         )
 
-    if settings.microcenter_product_urls:
-        retailers.append(
-            MicroCenterClient(
-                settings.microcenter_product_urls
-            )
+    retailers.append(
+        MicroCenterClient(
+            headless=False,
         )
-    else:
-        print(
-            "Microcenter skipped: " \
-            "no product URLs are configured."
-        )
+    )
 
     retailers.append(
         NeweggClient(

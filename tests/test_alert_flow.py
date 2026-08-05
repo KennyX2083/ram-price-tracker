@@ -32,7 +32,6 @@ def make_settings(
         database_path=database_path,
         discord_webhook_url="",
         best_buy_api_key="",
-        microcenter_product_urls=(),
         max_price=Decimal("300.00"),
         discount_threshold=Decimal("0.20"),
         minimum_history_observations=3,

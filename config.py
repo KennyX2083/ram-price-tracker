@@ -22,8 +22,6 @@ class Settings:
 
     database_path: str
 
-    microcenter_product_urls: tuple[str, ...]
-
     amazon_credential_id: str
     amazon_credential_secret: str
     amazon_partner_tag: str

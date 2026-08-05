@@ -2,12 +2,18 @@ from decimal import Decimal
 from pathlib import Path
 from bs4 import BeautifulSoup
 from retailers.microcenter import MicroCenterClient
+from filters import matches_requirements
 
-
-FIXTURE_PATH = (
+PRODUCT_FIXTURE_PATH = (
     Path(__file__).parent
     / "fixtures"
     / "microcenter_product.html"
+)
+
+SEARCH_FIXTURE_PATH = (
+    Path(__file__).parent
+    / "fixtures"
+    / "microcenter_search.html"
 )
 
 PRODUCT_URL = (
@@ -17,8 +23,8 @@ PRODUCT_URL = (
 )
 
 
-def load_fixture() -> BeautifulSoup:
-    html = FIXTURE_PATH.read_text(
+def load_fixture(path: Path) -> BeautifulSoup:
+    html = path.read_text(
         encoding="utf-8"
     )
 
@@ -28,11 +34,11 @@ def load_fixture() -> BeautifulSoup:
     )
 
 
-def test_parse_microcenter_listing():
+def test_parse_microcenter_listing() -> None:
     client = MicroCenterClient(
         product_urls = (),
     )
-    soup = load_fixture()
+    soup = load_fixture(PRODUCT_FIXTURE_PATH)
 
     listing = client.parse_listing(
         soup=soup,
@@ -65,3 +71,64 @@ def test_parse_microcenter_listing():
 
     assert listing.condition == "new"
     assert listing.url == PRODUCT_URL
+
+def test_parse_microcenter_search_page() -> None:
+    client = MicroCenterClient(
+        product_urls=(),
+    )
+
+    soup = load_fixture(
+        SEARCH_FIXTURE_PATH
+    )
+
+    listings = client.parse_search_page(
+        soup
+    )
+
+    assert len(listings) == 2
+
+    pny = listings[0]
+
+    assert pny.listing_id == (
+        "microcenter:709554"
+    )
+    assert pny.retailer == "Micro Center"
+    assert pny.seller == "Micro Center"
+    assert pny.price == Decimal("79.99")
+    assert pny.brand == "PNY"
+    assert pny.model_number == (
+        "MN8GSD43200-TB"
+    )
+    assert pny.in_stock is True
+
+    lexar = listings[1]
+
+    assert lexar.listing_id == (
+        "microcenter:694991"
+    )
+    assert lexar.price == Decimal(
+        "429.99"
+    )
+    assert lexar.brand == "Lexar"
+    assert lexar.model_number == (
+        "LD5S16G56C46STB"
+    )
+
+def test_microcenter_matching_ram_is_accepted() -> None:
+    client = MicroCenterClient(
+        product_urls=(),
+    )
+
+    listings = client.parse_search_page(
+        load_fixture(
+            SEARCH_FIXTURE_PATH
+        )
+    )
+
+    assert matches_requirements(
+        listings[0]
+    ) is False
+
+    assert matches_requirements(
+        listings[1]
+    ) is True
