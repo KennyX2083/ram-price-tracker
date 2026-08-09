@@ -8,7 +8,7 @@ from retailers.base import RetailerClient
 from retailers.microcenter import MicroCenterClient
 from retailers.newegg import NeweggClient
 from retailers.bhphoto import BHPhotoClient
-# from retailers.amazon import AmazonClient
+from retailers.amazon import AmazonClient
 
 def build_processor(
     settings: Settings,

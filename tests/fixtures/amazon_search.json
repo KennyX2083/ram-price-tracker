@@ -1,0 +1,85 @@
+{
+  "SearchResult": {
+    "Items": [
+      {
+        "ASIN": "B0TEST1234",
+        "DetailPageURL": "https://www.amazon.com/dp/B0TEST1234",
+        "ItemInfo": {
+          "Title": {
+            "DisplayValue": "Crucial 32GB Kit (2x16GB) DDR5 5600MHz SODIMM Laptop Memory"
+          },
+          "ByLineInfo": {
+            "Brand": {
+              "DisplayValue": "Crucial"
+            }
+          },
+          "ManufactureInfo": {
+            "ItemPartNumber": {
+              "DisplayValue": "CT2K16G56C46S5"
+            }
+          }
+        },
+        "Images": {
+          "Primary": {
+            "Medium": {
+              "URL": "https://example.com/crucial-amazon.jpg"
+            }
+          }
+        },
+        "Offers": {
+          "Listings": [
+            {
+              "Price": {
+                "Amount": 199.99,
+                "Currency": "USD",
+                "DisplayAmount": "$199.99"
+              },
+              "Availability": {
+                "Message": "In Stock"
+              },
+              "MerchantInfo": {
+                "Name": "Amazon.com"
+              },
+              "Condition": {
+                "Value": "New"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "ASIN": "B0WRONGDDR4",
+        "DetailPageURL": "https://www.amazon.com/dp/B0WRONGDDR4",
+        "ItemInfo": {
+          "Title": {
+            "DisplayValue": "Corsair 32GB Kit (2x16GB) DDR4 3200MHz SODIMM Laptop Memory"
+          },
+          "ByLineInfo": {
+            "Brand": {
+              "DisplayValue": "Corsair"
+            }
+          }
+        },
+        "Offers": {
+          "Listings": [
+            {
+              "Price": {
+                "Amount": 89.99,
+                "Currency": "USD"
+              },
+              "Availability": {
+                "Message": "In Stock"
+              },
+              "MerchantInfo": {
+                "Name": "Amazon.com"
+              },
+              "Condition": {
+                "Value": "New"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
