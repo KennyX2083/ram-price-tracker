@@ -78,14 +78,6 @@ def load_settings() -> Settings:
             "DATABASE_PATH",
             "data/ram_prices.db",
         ),
-        microcenter_product_urls=tuple(
-            url.strip()
-            for url in os.getenv(
-                "MICROCENTER_PRODUCT_URLS",
-                "",
-            ).split(",")
-            if url.strip()
-        ),
         amazon_credential_id=amazon_credential_id,
         amazon_credential_secret=(
             amazon_credential_secret

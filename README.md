@@ -113,36 +113,6 @@ Tests are written using **pytest**.
 
 ---
 
-## Project Structure
-
-```
-retailers/
-    microcenter.py
-    newegg.py
-    bhphoto.py
-    amazon.py
-
-tests/
-    fixtures/
-    test_database.py
-    test_filters.py
-    test_deal_processor.py
-    test_microcenter.py
-    test_newegg.py
-    test_bhphoto.py
-    test_alert_flow.py
-
-database.py
-alert_rules.py
-deal_processor.py
-discord_alerts.py
-filters.py
-product_matching.py
-main.py
-```
-
----
-
 ## Roadmap
 
 ### ✅ Completed

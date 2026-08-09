@@ -19,9 +19,15 @@ class MicroCenterClient(ManualURLClient):
         "?fq=category%3ALaptop+Memory%2FRAM%7C423"
     )
 
+    NYC_STORES = {
+        "115": "Brooklyn",
+        "145": "Flushing",
+    }   
+
     def __init__(
             self,
             product_urls: tuple[str, ...] | list[str] | None = None,
+            store_ids: tuple[str, ...] | list[str] | None = None,
             timeout: int = 30_000,
             headless: bool = False,
     ) -> None:
@@ -31,41 +37,102 @@ class MicroCenterClient(ManualURLClient):
             headless = headless,
         )
 
+        self.store_ids = list(
+            store_ids
+            if store_ids is not None
+            else self.NYC_STORES.keys()
+        )
+
+    def _build_search_url(
+        self,
+        store_id: str,
+    ) -> str:
+        return (
+            f"{self.LAPTOP_MEMORY_URL}"
+            f"&storeid={store_id}"
+        )
+
     def search(self) -> list[Listing]:
+        listings_by_id: dict[str, Listing] = {}
+
         with sync_playwright() as playwright:
-            context = self._create_browser_context(
-                playwright
+            browser = playwright.chromium.launch(
+                headless=self.headless,
             )
 
             try:
-                soup = self._fetch_search_page(
-                    context
-                )
+                for store_id in self.store_ids:
+                    store_name = self.NYC_STORES.get(
+                        store_id,
+                        store_id,
+                    )
+
+                    print(
+                        f"Checking Micro Center store: "
+                        f"{store_name}"
+                    )
+
+                    context = browser.new_context(
+                        viewport={
+                            "width": 1440,
+                            "height": 900,
+                        },
+                        locale="en-US",
+                        user_agent=(
+                            "Mozilla/5.0 "
+                            "(Windows NT 10.0; Win64; x64) "
+                            "AppleWebKit/537.36 "
+                            "(KHTML, like Gecko) "
+                            "Chrome/131.0.0.0 Safari/537.36"
+                        ),
+                    )
+
+                    try:
+                        soup = self._fetch_search_page(
+                            context=context,
+                            store_id=store_id,
+                        )
+
+                        listings = self.parse_search_page(
+                            soup
+                        )
+
+                        for listing in listings:
+                            listings_by_id[
+                                listing.listing_id
+                            ] = listing
+
+                    except Exception as error:
+                        print(
+                            f"Could not search {store_name}: "
+                            f"{type(error).__name__}: "
+                            f"{error}"
+                        )
+
+                    finally:
+                        context.close()
+
             finally:
-                context.browser.close()
+                browser.close()
 
-        listings = self.parse_search_page(
-            soup
+        return list(
+            listings_by_id.values()
         )
-
-        unique_listings: dict[str, Listing] = {}
-
-        for listing in listings:
-            unique_listings[
-                listing.listing_id
-            ] = listing
-
-        return list(unique_listings.values())
 
     def _fetch_search_page(
         self,
         context: BrowserContext,
-    ) -> BeautifulSoup:
+        store_id: str,
+        ) -> BeautifulSoup:
         page = context.new_page()
 
         try:
+            search_url = self._build_search_url(
+                store_id
+            )
+
             response = page.goto(
-                self.LAPTOP_MEMORY_URL,
+                search_url,
                 wait_until="domcontentloaded",
                 timeout=self.timeout,
             )
@@ -88,16 +155,12 @@ class MicroCenterClient(ManualURLClient):
                     timeout=15_000,
                 )
             except Exception:
-                # The parser will return an empty list if
-                # Micro Center displays no products.
                 pass
 
             page.wait_for_timeout(3000)
 
-            html = page.content()
-
             return BeautifulSoup(
-                html,
+                page.content(),
                 "html.parser",
             )
         finally:
