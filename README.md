@@ -1,8 +1,8 @@
 # RAM Deal Tracker
 
-A Python application that monitors laptop DDR5 memory kits across multiple retailers and sends Discord alerts when meaningful deals appear.
+A Python application that automatically monitors laptop DDR5 memory prices across multiple retailers and sends Discord alerts when meaningful deals appear.
 
-The tracker maintains historical price data in SQLite, detects significant price drops, and only alerts when a product first crosses a configured threshold to prevent notification spam.
+The tracker discovers products from retailer listings, filters them against configurable hardware requirements, maintains historical pricing data in SQLite, and detects significant price drops while preventing duplicate notifications.
 
 ---
 
@@ -10,106 +10,161 @@ The tracker maintains historical price data in SQLite, detects significant price
 
 ### Retailer Support
 
-| Retailer | Status |
-|----------|--------|
-| Micro Center | ✅ Live |
-| Newegg | ✅ Live |
-| B&H Photo | ✅ Live |
-| Amazon | 🚧 Planned |
-| Best Buy | 🚧 Planned (API currently unavailable) |
+| Retailer     | Status                                                |
+| ------------ | ----------------------------------------------------- |
+| Micro Center | ✅ Live — automatic Brooklyn & Flushing discovery      |
+| Newegg       | ✅ Live — automatic product discovery                  |
+| B&H Photo    | ✅ Live — automatic product discovery                  |
+| Amazon       | 🚧 Parser implemented — live API requires credentials |
+| Best Buy     | ⏸️ API integration postponed                          |
+
+The tracker automatically discovers products from supported retailers rather than requiring individual product URLs.
+
+Micro Center currently monitors inventory from the **Brooklyn and Flushing, NY** locations.
 
 ---
 
 ## Deal Detection
 
-The tracker currently monitors:
+The tracker currently targets:
 
-- DDR5
-- SO-DIMM (Laptop RAM)
-- 32GB kits (2×16GB)
-- 5600 MT/s
+* DDR5
+* SO-DIMM / laptop memory
+* 32GB total capacity
+* 2×16GB kits
+* 5600 MT/s
 
-Products are automatically filtered so desktop DIMMs, incorrect capacities, used products, and third-party marketplace sellers are ignored.
+Listings are automatically parsed and filtered before entering the price-tracking pipeline.
+
+Products that do not meet the configured requirements are ignored.
+
+## Automatic Product Discovery
+
+Supported retailers are searched automatically for relevant laptop memory products.
+
+The discovery pipeline:
+
+1. Searches retailer product/category pages
+2. Extracts available product listings
+3. Normalizes retailer-specific product information
+4. Enriches listings with hardware specifications
+5. Filters listings against the configured RAM requirements
+6. Records qualifying products and prices in SQLite
+7. Evaluates each product against the configured alert rules
+
+This allows the tracker to discover newly listed products without manually adding individual product URLs.
 
 ---
 
 ## Alert Rules
 
-A Discord notification is sent when a product:
+A Discord notification can be triggered when a qualifying product:
 
-- crosses below a configured absolute price threshold
-- crosses below a configurable percentage of its 30-day average price
-- is currently in stock
-- has not already generated an alert within the previous 24 hours
+* falls below a configured absolute price threshold
+* falls a configured percentage below its 30-day average
+* is currently in stock
+* is sold by an approved retailer or seller
+* has not already generated a duplicate alert within the configured cooldown period
+
+The default duplicate alert cooldown is **24 hours**.
+
+Alert state is tracked so repeated checks do not continuously notify for the same deal.
 
 ---
 
 ## Price History
 
-The application stores every observation in SQLite.
+Every qualifying product observation is stored in SQLite.
 
-Historical data is used to calculate:
+Historical data is used for:
 
-- 30-day moving average
-- historical price trend
-- threshold crossing events
-- duplicate alert prevention
+* 30-day moving averages
+* Price history tracking
+* Threshold crossing detection
+* Duplicate alert prevention
+* Historical deal evaluation
+
+The database maintains separate records for:
+
+* Product listings
+* Price observations
+* Alert history
+
+This allows the tracker to build a pricing history automatically as scheduled checks run.
 
 ---
 
 ## Discord Notifications
 
-Alerts include:
+Deal alerts can include:
 
-- Product name
-- Current price
-- Retailer
-- Seller
-- Product image
-- Link to product
-- Alert reason
-- Historical comparison (when available)
+* Product name
+* Current price
+* Retailer
+* Seller
+* Product image
+* Product link
+* Alert reason
+* 30-day average
+* Percentage below historical average
 
----
-
-## Product Matching
-
-Instead of relying only on product titles, the application enriches each listing by extracting information such as:
-
-- Memory type
-- Capacity
-- Module count
-- Module size
-- Form factor
-- Speed
-
-This allows products from different retailers to be matched consistently even when their naming conventions differ.
+Notifications are delivered using Discord webhooks.
 
 ---
 
-## Testing
 
-The project includes automated tests covering:
+## Automated Execution
 
-- Product matching
-- Retailer parsers
-- Database operations
-- Alert generation
-- Deal processor logic
+The tracker is configured to run automatically using **Windows Task Scheduler**.
 
-Tests are written using **pytest**.
+A `run_tracker.bat` script:
+
+1. Changes to the project directory
+2. Activates the project's Python virtual environment
+3. Runs `main.py`
+4. Records console output and errors
+5. Deactivates the virtual environment
+
+Scheduled runs allow the price database to accumulate observations without requiring the tracker to be started manually.
+
+### Logging
+
+Automated runs are written to:
+
+```text
+data/tracker.log
+```
+
+The log records:
+
+* Run start and finish times
+* Retailer discovery results
+* Filtered products
+* Qualifying products
+* Current prices
+* Alert decisions
+* Runtime errors
+
+Database and log files are excluded from Git.
+
+---
+
+## Amazon Support
+
+There is implementation for the Amazon section of the program but due to not having official API credentials at this time live support will be added later.
 
 ---
 
 ## Tech Stack
 
-- Python
-- SQLite
-- Playwright
-- BeautifulSoup4
-- Requests
-- Discord Webhooks
-- pytest
+* Python
+* SQLite
+* Playwright
+* BeautifulSoup4
+* Requests
+* Discord Webhooks
+* pytest
+* Windows Task Scheduler
 
 ---
 
@@ -117,66 +172,62 @@ Tests are written using **pytest**.
 
 ### ✅ Completed
 
-- SQLite price database
-- Discord webhook alerts
-- Product matching engine
-- Micro Center integration
-- Newegg integration
-- B&H integration
-- Automated testing
+* SQLite price database
+* Historical price observations
+* 30-day moving average calculations
+* Discord webhook alerts
+* Duplicate alert prevention
+* Product specification enrichment
+* Product matching and filtering
+* Micro Center automatic discovery
+  * Brooklyn, NY
+  * Flushing, NY
+* Newegg automatic discovery
+* B&H Photo automatic discovery
+* Amazon response parser
+* Automated pytest coverage
+* Windows Task Scheduler automation
+* Scheduled logging
 
 ### 🚧 In Progress
 
-- Amazon integration
+* Web dashboard
 
-### 📋 Planned
+### 📋 Future Improvements (Hopefully)
 
-- Windows Task Scheduler automation
-- Web dashboard
-- Price history charts
-- Additional retailers
-- Historical analytics
+* Live Amazon API integration
+* Best Buy integration
+* Additional retailers
+* Additional Micro Center locations
+* Improved retailer-specific metadata extraction
+* Expanded historical analytics
 
 ---
 
-## Running
+## Automated Runs
 
-Create a virtual environment:
-
-```bash
-python -m venv .venv
-```
-
-Activate it:
-
-**Windows**
+On Windows, `run_tracker.bat` can be executed manually with:
 
 ```cmd
-.venv\Scripts\activate
+run_tracker.bat
 ```
 
-Install dependencies:
+The project can also be configured in Windows Task Scheduler to execute this script periodically.
 
-```cmd
-pip install -r requirements.txt
-```
+Scheduled output is written to:
 
-Create a `.env` file using `.env.example`.
-
-Run the tracker:
-
-```cmd
-python main.py
-```
-
-Run all tests:
-
-```cmd
-pytest
+```text
+data/tracker.log
 ```
 
 ---
 
-## License
+## Current Project Status
 
-MIT
+The core tracking pipeline is working.
+
+Micro Center, Newegg, and B&H Photo are currently supported as live retailer sources.
+
+Looking to add a web dashboard as a final main goal to the project. 
+
+---
