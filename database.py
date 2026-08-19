@@ -455,6 +455,119 @@ class Database:
                 ),
             )
 
+    def get_recent_alerts(
+        self,
+        limit: int = 20,
+    ) -> list[dict[str, object]]:
+        with self.connect() as connection:
+            connection.row_factory = sqlite3.Row
+
+            rows = connection.execute(
+                """
+                SELECT
+                    ah.listing_id,
+                    l.name,
+                    l.retailer,
+                    ah.alerted_at,
+                    ah.price_cents,
+                    ah.average_30d_cents,
+                    ah.reason
+                FROM alert_history AS ah
+                JOIN listings AS l
+                    ON l.listing_id = ah.listing_id
+                ORDER BY ah.alerted_at DESC
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+
+        return [
+            dict(row)
+            for row in rows
+        ]
+
+    def get_dashboard_listings(
+        self,
+    ) -> list[dict[str, object]]:
+        with self.connect() as connection:
+            connection.row_factory = sqlite3.Row
+
+            rows = connection.execute(
+                """
+                SELECT
+                    l.listing_id,
+                    l.retailer,
+                    l.seller,
+                    l.name,
+                    l.brand,
+                    l.model_number,
+                    l.url,
+                    l.image_url,
+                    l.last_seen_at,
+
+                    (
+                        SELECT ph.price_cents
+                        FROM price_history AS ph
+                        WHERE ph.listing_id = l.listing_id
+                        ORDER BY ph.checked_at DESC
+                        LIMIT 1
+                    ) AS current_price_cents,
+
+                    (
+                        SELECT AVG(ph.price_cents)
+                        FROM price_history AS ph
+                        WHERE ph.listing_id = l.listing_id
+                        AND ph.checked_at >= datetime(
+                            'now',
+                            '-30 days'
+                        )
+                    ) AS average_30d_cents
+
+                FROM listings AS l
+
+                ORDER BY
+                    l.retailer,
+                    current_price_cents
+                """
+            ).fetchall()
+
+        return [
+            dict(row)
+            for row in rows
+        ]
+
+    def get_price_history(
+        self,
+        listing_id: str,
+        days: int = 30,
+    ) -> list[dict[str, object]]:
+        with self.connect() as connection:
+            connection.row_factory = sqlite3.Row
+
+            rows = connection.execute(
+                """
+                SELECT
+                    checked_at,
+                    price_cents
+                FROM price_history
+                WHERE listing_id = ?
+                AND checked_at >= datetime(
+                    'now',
+                    ?
+                )
+                ORDER BY checked_at ASC
+                """,
+                (
+                    listing_id,
+                    f"-{days} days",
+                ),
+            ).fetchall()
+
+        return [
+            dict(row)
+            for row in rows
+        ]
+
 def decimal_to_cents(value: Decimal) -> int:
     return int(
         (value * Decimal("100")).quantize(

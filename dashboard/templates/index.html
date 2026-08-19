@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+
+    <title>RAM Deal Tracker</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for(
+            'static',
+            filename='css/style.css'
+        ) }}"
+    >
+</head>
+
+<body>
+    <header class="site-header">
+        <div>
+            <h1>RAM Deal Tracker</h1>
+            <p>
+                DDR5-5600 2×16GB SO-DIMM
+                price monitoring
+            </p>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <section class="summary">
+            <div class="summary-card">
+                <span class="summary-label">
+                    Tracked Listings
+                </span>
+
+                <strong class="summary-value">
+                    {{ listings|length }}
+                </strong>
+            </div>
+        </section>
+
+        <section>
+            <div class="section-heading">
+                <h2>Current Listings</h2>
+            </div>
+
+            <div class="product-grid">
+
+                {% for listing in listings %}
+
+                    <article class="product-card">
+
+                        {% if listing.image_url %}
+                            <img
+                                class="product-image"
+                                src="{{ listing.image_url }}"
+                                alt=""
+                            >
+                        {% endif %}
+
+                        <div class="product-content">
+
+                            <div class="retailer">
+                                {{ listing.retailer }}
+                            </div>
+
+                            <h3>
+                                {{ listing.name }}
+                            </h3>
+
+                            {% if listing.current_price_cents %}
+
+                                <div class="price">
+                                    ${{
+                                        "%.2f"|format(
+                                            listing.current_price_cents
+                                            / 100
+                                        )
+                                    }}
+                                </div>
+
+                            {% endif %}
+
+                            {% if listing.average_30d_cents %}
+
+                                <div class="average">
+                                    30-day average:
+                                    ${{
+                                        "%.2f"|format(
+                                            listing.average_30d_cents
+                                            / 100
+                                        )
+                                    }}
+                                </div>
+
+                            {% endif %}
+
+                            <a
+                                class="product-link"
+                                href="{{ listing.url }}"
+                                target="_blank"
+                                rel="noopener"
+                            >
+                                View product
+                            </a>
+
+                        </div>
+
+                    </article>
+
+                {% endfor %}
+
+            </div>
+        </section>
+
+    </main>
+</body>
+</html>
