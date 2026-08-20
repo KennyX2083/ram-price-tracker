@@ -34,6 +34,7 @@
     <main class="container">
 
         <section class="summary">
+
             <div class="summary-card">
                 <span class="summary-label">
                     Tracked Listings
@@ -43,6 +44,45 @@
                     {{ listings|length }}
                 </strong>
             </div>
+
+            <div class="summary-card">
+                <span class="summary-label">
+                    Lowest Price
+                </span>
+
+                <strong class="summary-value">
+                    {% if lowest_price_cents is not none %}
+                        ${{
+                            "%.2f"|format(
+                                lowest_price_cents / 100
+                            )
+                        }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </strong>
+            </div>
+
+            <div class="summary-card">
+                <span class="summary-label">
+                    Retailers
+                </span>
+
+                <strong class="summary-value">
+                    {{ retailer_count }}
+                </strong>
+            </div>
+
+            <div class="summary-card">
+                <span class="summary-label">
+                    Recent Alerts
+                </span>
+
+                <strong class="summary-value">
+                    {{ alerts|length }}
+                </strong>
+            </div>
+
         </section>
 
         <section>
@@ -101,15 +141,28 @@
 
                             {% endif %}
 
-                            <a
-                                class="product-link"
-                                href="{{ listing.url }}"
-                                target="_blank"
-                                rel="noopener"
-                            >
-                                View product
-                            </a>
+                            <div class="card-actions">
 
+                                <a
+                                    class="details-link"
+                                    href="{{ url_for(
+                                        'product_detail',
+                                        listing_id=listing.listing_id
+                                    ) }}"
+                                >
+                                    View price history
+                                </a>
+
+                                <a
+                                    class="product-link"
+                                    href="{{ listing.url }}"
+                                    target="_blank"
+                                    rel="noopener"
+                                >
+                                    View product
+                                </a>
+                                
+                            </div>
                         </div>
 
                     </article>
@@ -119,6 +172,61 @@
             </div>
         </section>
 
+        <section class="alerts-section">
+
+            <div class="section-heading">
+                <h2>Recent Alerts</h2>
+            </div>
+
+            {% if alerts %}
+
+                <div class="alerts-list">
+
+                    {% for alert in alerts %}
+
+                        <div class="alert-row">
+
+                            <div class="alert-product">
+                                <strong>
+                                    {{ alert.name }}
+                                </strong>
+
+                                <span>
+                                    {{ alert.retailer }}
+                                </span>
+                            </div>
+
+                            <div class="alert-price">
+                                ${{
+                                    "%.2f"|format(
+                                        alert.price_cents / 100
+                                    )
+                                }}
+                            </div>
+
+                            <div class="alert-reason">
+                                {{ alert.reason }}
+                            </div>
+
+                            <div class="alert-date">
+                                {{ alert.alerted_at }}
+                            </div>
+
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+            {% else %}
+
+                <div class="empty-state">
+                    No deal alerts have been triggered yet.
+                </div>
+
+            {% endif %}
+
+        </section>
     </main>
 </body>
 </html>

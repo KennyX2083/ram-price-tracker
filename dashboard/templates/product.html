@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+
+    <title>
+        {{ listing.name }} | RAM Deal Tracker
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for(
+            'static',
+            filename='css/style.css'
+        ) }}"
+    >
+
+    <script
+        src="https://cdn.jsdelivr.net/npm/chart.js"
+    ></script>
+</head>
+
+<body>
+    <header class="site-header">
+        <div>
+            <a
+                class="back-link"
+                href="{{ url_for('index') }}"
+            >
+                ← Back to dashboard
+            </a>
+
+            <h1>RAM Deal Tracker</h1>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <section class="product-detail">
+
+            {% if listing.image_url %}
+                <div class="detail-image-container">
+                    <img
+                        class="detail-image"
+                        src="{{ listing.image_url }}"
+                        alt=""
+                    >
+                </div>
+            {% endif %}
+
+            <div class="detail-content">
+
+                <div class="retailer">
+                    {{ listing.retailer }}
+                </div>
+
+                <h2>
+                    {{ listing.name }}
+                </h2>
+
+                <div class="detail-price">
+                    ${{
+                        "%.2f"|format(
+                            listing.current_price_cents
+                            / 100
+                        )
+                    }}
+                </div>
+
+                <div class="stats-grid">
+
+                    <div class="stat-card">
+                        <span>30-Day Average</span>
+                        <strong>
+                            {% if listing.average_30d_cents %}
+                                ${{
+                                    "%.2f"|format(
+                                        listing.average_30d_cents
+                                        / 100
+                                    )
+                                }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </strong>
+                    </div>
+
+                    <div class="stat-card">
+                        <span>Lowest Recorded</span>
+                        <strong>
+                            ${{
+                                "%.2f"|format(
+                                    listing.lowest_price_cents
+                                    / 100
+                                )
+                            }}
+                        </strong>
+                    </div>
+
+                    <div class="stat-card">
+                        <span>Highest Recorded</span>
+                        <strong>
+                            ${{
+                                "%.2f"|format(
+                                    listing.highest_price_cents
+                                    / 100
+                                )
+                            }}
+                        </strong>
+                    </div>
+
+                </div>
+
+                <dl class="product-meta">
+
+                    <div>
+                        <dt>Retailer</dt>
+                        <dd>{{ listing.retailer }}</dd>
+                    </div>
+
+                    <div>
+                        <dt>Seller</dt>
+                        <dd>{{ listing.seller }}</dd>
+                    </div>
+
+                    {% if listing.brand %}
+                    <div>
+                        <dt>Brand</dt>
+                        <dd>{{ listing.brand }}</dd>
+                    </div>
+                    {% endif %}
+
+                    {% if listing.model_number %}
+                    <div>
+                        <dt>Model</dt>
+                        <dd>
+                            {{ listing.model_number }}
+                        </dd>
+                    </div>
+                    {% endif %}
+
+                    <div>
+                        <dt>Last Seen</dt>
+                        <dd>
+                            {{ listing.last_seen_at }}
+                        </dd>
+                    </div>
+
+                </dl>
+
+                <a
+                    class="product-link"
+                    href="{{ listing.url }}"
+                    target="_blank"
+                    rel="noopener"
+                >
+                    View at {{ listing.retailer }}
+                </a>
+
+            </div>
+
+        </section>
+
+        <section class="chart-section">
+
+            <h2>30-Day Price History</h2>
+
+            {% if chart_prices %}
+
+                <div class="chart-container">
+                    <canvas id="priceChart"></canvas>
+                </div>
+
+            {% else %}
+
+                <p>
+                    No price history is available yet.
+                </p>
+
+            {% endif %}
+
+        </section>
+
+    </main>
+
+    <script>
+        const labels = {{ chart_labels | tojson }};
+        const prices = {{ chart_prices | tojson }};
+
+        if (prices.length > 0) {
+            const context = document
+                .getElementById("priceChart")
+                .getContext("2d");
+
+            new Chart(context, {
+                type: "line",
+
+                data: {
+                    labels: labels,
+
+                    datasets: [
+                        {
+                            label: "Price",
+                            data: prices,
+                            tension: 0.25
+                        }
+                    ]
+                },
+
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return (
+                                        "$" +
+                                        context.parsed.y
+                                            .toFixed(2)
+                                    );
+                                }
+                            }
+                        }
+                    },
+
+                    scales: {
+                        y: {
+                            ticks: {
+                                callback: function(value) {
+                                    return "$" + value;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>

@@ -486,6 +486,67 @@ class Database:
             for row in rows
         ]
 
+    def get_dashboard_listing(
+        self,
+        listing_id: str,
+    ) -> dict[str, object] | None:
+        with self.connect() as connection:
+            connection.row_factory = sqlite3.Row
+
+            row = connection.execute(
+                """
+                SELECT
+                    l.listing_id,
+                    l.retailer,
+                    l.seller,
+                    l.name,
+                    l.brand,
+                    l.model_number,
+                    l.url,
+                    l.image_url,
+                    l.last_seen_at,
+
+                    (
+                        SELECT ph.price_cents
+                        FROM price_history AS ph
+                        WHERE ph.listing_id = l.listing_id
+                        ORDER BY ph.checked_at DESC
+                        LIMIT 1
+                    ) AS current_price_cents,
+
+                    (
+                        SELECT AVG(ph.price_cents)
+                        FROM price_history AS ph
+                        WHERE ph.listing_id = l.listing_id
+                          AND ph.checked_at >= datetime(
+                              'now',
+                              '-30 days'
+                          )
+                    ) AS average_30d_cents,
+
+                    (
+                        SELECT MIN(ph.price_cents)
+                        FROM price_history AS ph
+                        WHERE ph.listing_id = l.listing_id
+                    ) AS lowest_price_cents,
+
+                    (
+                        SELECT MAX(ph.price_cents)
+                        FROM price_history AS ph
+                        WHERE ph.listing_id = l.listing_id
+                    ) AS highest_price_cents
+
+                FROM listings AS l
+                WHERE l.listing_id = ?
+                """,
+                (listing_id,),
+            ).fetchone()
+
+        if row is None:
+            return None
+
+        return dict(row)
+
     def get_dashboard_listings(
         self,
     ) -> list[dict[str, object]]:
