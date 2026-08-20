@@ -2,6 +2,7 @@ from __future__ import annotations
 from flask import Flask, render_template, abort
 from config import load_settings
 from database import Database
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -11,6 +12,25 @@ database = Database(
     settings.database_path
 )
 
+@app.template_filter("format_datetime")
+def format_datetime(
+    value: str | None,
+) -> str:
+    if not value:
+        return "—"
+
+    try:
+        parsed = datetime.fromisoformat(
+            value
+        )
+
+        return parsed.strftime(
+            "%b %d, %Y %I:%M %p"
+        )
+
+    except ValueError:
+        return value
+    
 @app.route("/")
 def index():
     listings = (
@@ -62,10 +82,23 @@ def product_detail(
         days=30,
     )
 
-    chart_labels = [
-        row["checked_at"]
-        for row in history
-    ]
+    chart_labels: list[str] = []
+
+    for row in history: 
+        try:
+            checked_at = datetime.fromisoformat(
+                row["checked_at"]
+            )
+
+            chart_labels.append(
+                checked_at.strftime(
+                    "%b %d"
+                )
+            )
+        except ValueError:
+            chart_labels.append(
+                row["checked_at"]
+            )
 
     chart_prices = [
         row["price_cents"] / 100

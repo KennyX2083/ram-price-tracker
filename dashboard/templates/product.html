@@ -147,7 +147,7 @@
                     <div>
                         <dt>Last Seen</dt>
                         <dd>
-                            {{ listing.last_seen_at }}
+                            {{ listing.last_seen_at | format_datetime}}
                         </dd>
                     </div>
 
@@ -216,6 +216,11 @@
                     responsive: true,
                     maintainAspectRatio: false,
 
+                    interaction: {
+                        mode: "index",
+                        intersect: false
+                    },
+
                     plugins: {
                         legend: {
                             display: false
@@ -226,8 +231,7 @@
                                 label: function(context) {
                                     return (
                                         "$" +
-                                        context.parsed.y
-                                            .toFixed(2)
+                                        context.parsed.y.toFixed(2)
                                     );
                                 }
                             }
@@ -235,10 +239,21 @@
                     },
 
                     scales: {
+                        x: {
+                            ticks: {
+                                maxRotation: 0,
+                                autoSkip: true,
+                                maxTicksLimit: 10
+                            }
+                        },
+
                         y: {
                             ticks: {
                                 callback: function(value) {
-                                    return "$" + value;
+                                    return (
+                                        "$" +
+                                        Number(value).toFixed(2)
+                                    );
                                 }
                             }
                         }
